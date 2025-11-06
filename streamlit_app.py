@@ -127,3 +127,44 @@ else:
         # ✅ 상세 정보 보기
         with st.expander("📘 상세 정보 보기"):
             st.dataframe(filtered_sort.head(10))  # Top 10 테이블
+
+
+# ===== 🎭 Genre-based Top Recommendation =====
+st.subheader("🎭 장르별 Top 추천")
+
+if "Genre" in df.columns and "Rank_clean" in df.columns:
+
+    # 장르 목록 생성
+    genre_list = (
+        df["Genre"]
+        .dropna()
+        .astype(str)
+        .str.split(",")
+        .explode()
+        .str.strip()
+        .unique()
+    )
+    genre_list = sorted(genre_list)
+
+    selected_genre = st.selectbox("📌 장르 선택", genre_list)
+
+    filtered_genre = df[
+        df["Genre"].astype(str).str.contains(selected_genre, case=False, na=False)
+    ].dropna(subset=["Rank_clean"])
+
+    if filtered_genre.empty:
+        st.warning(f"😥 '{selected_genre}' 장르에 Rank 데이터가 없습니다.")
+    else:
+        top1 = filtered_genre.sort_values("Rank_clean", ascending=True).iloc[0]
+
+        st.success(f"🎖️ {selected_genre} 장르 TOP: **{top1['Name']}**")
+        st.write(f"📊 Rank: `{top1['Rank']}`")
+        
+        if "Synopsis" in filtered_genre.columns:
+            st.write(f"📝 Synopsis: {top1['Synopsis']}")
+
+        with st.expander("📘 장르 내 Top 10 보기"):
+            st.dataframe(filtered_genre.sort_values("Rank_clean").head(10))
+
+else:
+    st.error("❌ Genre 또는 Rank 데이터가 누락되어 있습니다.")

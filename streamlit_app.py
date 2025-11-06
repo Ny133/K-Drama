@@ -2,116 +2,94 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-# ✅ GitHub CSV URL
 CSV_URL = "https://raw.githubusercontent.com/Ny133/K-Drama/main/kdrama.csv"
 
+# ✅ 원본 컬럼 자동 파악 & 정리
 @st.cache_data
 def load_data():
     df = pd.read_csv(CSV_URL)
 
-    # ✅ 컬럼명 정리 (공백/깨진 컬럼명 수정)
-    df.columns = df.columns.str.strip().str.replace(r'[^A-Za-z0-9 ]', '', regex=True)
-    df = df.rename(columns={
-        "Aired Date": "Aired_Date",
-        "Year of re": "Year",
-        "Original N": "Network",
-        "Aired On": "Aired_On",
-        "Number c": "Num_Episodes",
-        "Duration": "Duration",
-        "Content R": "Content_Rating",
-        "Rating": "Rating",
-        "Synopsis": "Synopsis",
-        "Genre": "Genre",
-        "Tags": "Tags",
-        "Director": "Director",
-        "Screenwri": "Screenwriter",
-        "Cast": "Cast",
-        "Production": "Production",
-        "Rank": "Rank"
-    })
-
-    # ✅ 숫자형 변환
-    df["Rating"] = pd.to_numeric(df["Rating"], errors="coerce")
-    df["Num_Episodes"] = pd.to_numeric(df["Num_Episodes"], errors="coerce")
-    df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
+    # ✅ 모든 컬럼명 통일 (공백 제거 + 특수문자 제거)
+    df.columns = df.columns.str.strip().str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
 
     return df
-
 
 df = load_data()
 
 st.title("📺 K-Drama Dashboard")
-st.write("Korean Drama Analytics with Streamlit")
+
+# ✅ 현재 읽힌 컬럼명 표시 (테스트용)
+st.write("### ✅ Loaded Columns:")
+st.write(df.columns.tolist())
+
+# ✅ 실제 존재하는 컬럼 기반 사용
+valid_cols = df.columns.tolist()
+
+col_year = next((c for c in valid_cols if "Year" in c), None)
+col_network = next((c for c in valid_cols if "Network" in c), None)
+col_rating = next((c for c in valid_cols if "Rating" in c), None)
+col_genre = next((c for c in valid_cols if "Genre" in c), None)
+col_episodes = next((c for c in valid_cols if "Number" in c or "Episode" in c), None)
+
+# ✅ 데이터 타입 변환
+if col_rating:
+    df[col_rating] = pd.to_numeric(df[col_rating], errors="coerce")
+
+if col_episodes:
+    df[col_episodes] = pd.to_numeric(df[col_episodes], errors="coerce")
 
 # ✅ Sidebar Filters
 st.sidebar.header("Filters")
 
-year_filter = st.sidebar.multiselect(
-    "Select Year", options=sorted(df["Year"].dropna().unique()),
-    default=sorted(df["Year"].dropna().unique())
-)
+# ✅ 연도 필터
+if col_year:
+    year_filter = st.sidebar.multiselect(
+        "Select Year",
+        sorted(df[col_year].dropna().unique()),
+        default=sorted(df[col_year].dropna().unique())
+    )
+    df = df[df[col_year].isin(year_filter)]
 
-network_filter = st.sidebar.multiselect(
-    "Select Network", options=df["Network"].dropna().unique(),
-    default=df["Network"].dropna().unique()
-)
+# ✅ 방송사 필터
+if col_network:
+    network_filter = st.sidebar.multiselect(
+        "Select Network",
+        sorted(df[col_network].dropna().unique()),
+        default=sorted(df[col_network].dropna().unique())
+    )
+    df = df[df[col_network].isin(network_filter)]
 
-filtered = df[
-    (df["Year"].isin(year_filter)) &
-    (df["Network"].isin(network_filter))
-]
 
-# ✅ Show Data Table
-st.subheader("📋 Filtered K-Drama Table")
-st.dataframe(filtered)
+# ✅ 데이터 미리보기
+st.subheader("📋 Filtered Data")
+st.dataframe(df)
+
 
 # ✅ Rating Distribution
-st.subheader("⭐ Rating Distribution")
-fig_rating = px.histogram(
-    filtered,
-    x="Rating",
-    nbins=10,
-    title="Rating Distribution of K-Dramas"
-)
-st.plotly_chart(fig_rating, use_container_width=True)
+if col_rating:
+    st.subheader("⭐ Rating Distribution")
+    fig_rating = px.histogram(df, x=col_rating)
+    st.plotly_chart(fig_rating, use_container_width=True)
 
-# ✅ Genre Distribution Chart
-st.subheader("🎭 Genre Distribution")
 
-genre_counts = (
-    filtered["Genre"]
-    .dropna()
-    .astype(str)
-    .str.split(",")
-    .explode()
-    .str.strip()
-    .value_counts()
-    .reset_index()
-)
-genre_counts.columns = ["Genre", "Count"]
+# ✅ Genre Bar Chart
+if col_genre:
+    st.subheader("🎭 Genre Distribution")
+    genre_counts = (
+        df[col_genre]
+        .dropna().astype(str)
+        .str.split(",").explode().str.strip()
+        .value_counts().reset_index()
+    )
+    genre_counts.columns = ["Genre", "Count"]
+    fig_genre = px.bar(genre_counts, x="Genre", y="Count")
+    st.plotly_chart(fig_genre, use_container_width=True)
 
-fig_genre = px.bar(
-    genre_counts,
-    x="Genre",
-    y="Count",
-    title="Genre Frequency"
-)
-st.plotly_chart(fig_genre, use_container_width=True)
 
 # ✅ Rating vs Episodes
-st.subheader("📈 Rating vs Number of Episodes")
-fig_scatter = px.scatter(
-    filtered,
-    x="Num_Episodes",
-    y="Rating",
-    color="Genre",
-    hover_data=["Name", "Network"],
-    title="Rating vs Episode Count"
-)
-st.plotly_chart(fig_scatter, use_container_width=True)
-
-# ✅ Top-rated Dramas Table
-st.subheader("🏆 Top 10 Dramas by Rating")
-top10 = filtered.sort_values(by="Rating", ascending=False).head(10)
-st.table(top10[["Name", "Year", "Rating", "Network"]])
+if col_rating and col_episodes:
+    st.subheader("📈 Rating vs Episodes")
+    fig_scatter = px.scatter(df, x=col_episodes, y=col_rating,
+                             hover_data=[df.columns[0]])
+    st.plotly_chart(fig_scatter, use_container_width=True)
 

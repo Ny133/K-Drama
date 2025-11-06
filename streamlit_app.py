@@ -76,7 +76,7 @@ if col_genre:
     fig_genre = px.bar(genre_counts, x="Genre", y="Count")
     st.plotly_chart(fig_genre, use_container_width=True)
 
-st.title("🎬 연도별 K-Drama Top 추천")
+st.subheader("🎬 연도별 K-Drama Top 추천")
 
 # ✅ 데이터 로드
 @st.cache_data

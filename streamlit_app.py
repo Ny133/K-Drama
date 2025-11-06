@@ -18,9 +18,7 @@ df = load_data()
 
 st.title("📺 K-Drama Dashboard")
 
-# ✅ 현재 읽힌 컬럼명 표시 (테스트용)
-st.write("### ✅ Loaded Columns:")
-st.write(df.columns.tolist())
+
 
 # ✅ 실제 존재하는 컬럼 기반 사용
 valid_cols = df.columns.tolist()

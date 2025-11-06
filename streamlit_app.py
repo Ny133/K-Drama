@@ -76,7 +76,7 @@ if col_genre:
     fig_genre = px.bar(genre_counts, x="Genre", y="Count")
     st.plotly_chart(fig_genre, use_container_width=True)
 
-st.subheader("🎬 연도별 K-Drama Top 추천")
+st.subheader("🎬 연도별 Drama 추천")
 
 # ✅ 데이터 로드
 @st.cache_data
@@ -130,7 +130,7 @@ else:
 
 
 # ===== 🎭 Genre-based Top Recommendation =====
-st.subheader("🎭 장르별 Top 추천")
+st.subheader("🎭 장르별 Top Drama 추천")
 
 if "Genre" in df.columns and "Rank_clean" in df.columns:
 

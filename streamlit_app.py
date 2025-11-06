@@ -62,8 +62,11 @@ if col_network:
 st.subheader("📋 Filtered Data")
 st.dataframe(df)
 
-# ✅ Rating Distribution if col_rating: 
-st.subheader("⭐ Rating Distribution") fig_rating = px.histogram(df, x=col_rating) st.plotly_chart(fig_rating, use_container_width=True)
+# ✅ Rating Distribution
+if col_rating:
+    st.subheader("⭐ Rating Distribution")
+    fig_rating = px.histogram(df, x=col_rating)
+    st.plotly_chart(fig_rating, use_container_width=True)
 
 # ✅ Genre Bar Chart
 if col_genre:

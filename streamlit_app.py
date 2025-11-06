@@ -75,50 +75,53 @@ if col_genre:
     genre_counts.columns = ["Genre", "Count"]
     fig_genre = px.bar(genre_counts, x="Genre", y="Count")
     st.plotly_chart(fig_genre, use_container_width=True)
+# ====== 🎭 Genre-based Top Picks ======
+st.subheader("🎭 Genre-based Top Rated Dramas")
 
-rating_clean = (
-    df[col_rating]
-    .astype(str)
-    .str.extract(r'([0-9]+[.,]?[0-9]*)')[0]
-    .str.replace(',', '.', regex=False)
-)
-
-df["_rating_clean"] = pd.to_numeric(rating_clean, errors="coerce")
-
-# ====== Rating by Drama Title ======
-st.subheader("📊 Rating by Drama Title")
-
-if col_rating and df["_rating_clean"].notna().sum() > 0:
-    # 유효한 rating 있는 데이터만 사용
-    df_valid = df.dropna(subset=["_rating_clean"])
-
-    # 평점 높은 순 정렬
-    df_sorted = df_valid.sort_values("_rating_clean", ascending=False)
-
-    # 작품명 컬럼 찾기 (보통 첫 컬럼이 Name)
-    col_name = df.columns[0]
-
-    fig_bar = px.bar(
-        df_sorted,
-        x="_rating_clean",
-        y=col_name,
-        orientation="h",
-        title="Drama Ratings",
-        labels={"_rating_clean": "Rating", col_name: "Drama"},
-        hover_data=[col_name, col_rating],
+# Genre 분리 및 정제
+if "Genre" in df.columns and "_rating_clean" in df.columns:
+    genre_list = (
+        df["Genre"]
+        .dropna()
+        .astype(str)
+        .str.split(",")
+        .explode()
+        .str.strip()
+        .unique()
     )
+    genre_list = sorted(genre_list)
 
-    fig_bar.update_layout(
-        yaxis={'categoryorder':'total ascending'},  # 높은 평점이 위로 오도록
-        height=800
-    )
+    selected_genre = st.selectbox("📌 Select a Genre", genre_list)
 
-    st.plotly_chart(fig_bar, use_container_width=True)
+    if selected_genre:
+        filtered_genre = df[
+            df["Genre"]
+            .astype(str)
+            .str.contains(selected_genre, case=False, na=False)
+        ].dropna(subset=["_rating_clean"])
 
-    # ✅ 작품 검색 기능 추가(Optional)
-    search_title = st.text_input("🔍 Search Drama Title")
-    if search_title:
-        result = df[df[col_name].str.contains(search_title, case=False, na=False)]
-        st.write(result[[col_name, col_rating, "_rating_clean"]])
+        if not filtered_genre.empty:
+            top_drama = filtered_genre.sort_values("_rating_clean", ascending=False).iloc[0]
+            
+            st.success(f"🎖️ Top Recommendation in **{selected_genre}**")
+
+            col_name = df.columns[0]  # 작품명 컬럼
+            top_name = top_drama[col_name]
+            top_rating = top_drama["_rating_clean"]
+            top_year = top_drama["Year"] if "Year" in filtered_genre.columns else "Unknown"
+
+            st.markdown(f"""
+                **{top_name}**  
+                ⭐ Rating: `{top_rating}`  
+                📅 Year: `{top_year}`
+            """)
+
+            # 상세 데이터 표시 버튼
+            with st.expander("📘 More Details"):
+                cols_to_show = [col for col in df.columns if col not in ["_rating_clean"]]
+                st.write(top_drama[cols_to_show])
+        else:
+            st.warning("⚠️ No valid rating data for this genre.")
 else:
-    st.warning("⚠ 유효한 Rating 데이터가 부족합니다.")
+    st.error("❌ Genre or rating data missing.")
+

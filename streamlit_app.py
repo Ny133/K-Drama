@@ -80,9 +80,12 @@ if col_genre:
 # ====== 🎭 Genre-based Top Ranked Dramas ======
 st.subheader("🎭 Genre-based Top Ranked Dramas")
 
-if "Genre" in df.columns and "_rating_clean" in df.columns:
-
-    # 장르 목록 구성
+# 필요한 컬럼 체크
+required_cols = ["Name", "Genre", "Rank"]
+if not all(col in df.columns for col in required_cols):
+    st.error("❌ Required columns missing: Name, Genre, Rank")
+else:
+    # 장르 목록 생성
     genre_list = (
         df["Genre"]
         .dropna()
@@ -97,36 +100,38 @@ if "Genre" in df.columns and "_rating_clean" in df.columns:
     selected_genre = st.selectbox("📌 Select a Genre", genre_list)
 
     if selected_genre:
+        # 장르 포함한 작품 필터링
         filtered = df[
             df["Genre"].astype(str).str.contains(selected_genre, case=False, na=False)
-        ].dropna(subset=["_rating_clean"])
+        ].copy()
 
         if not filtered.empty:
-            # 순위 계산
-            filtered = filtered.sort_values("_rating_clean", ascending=False).reset_index(drop=True)
-            filtered["Rank"] = filtered.index + 1
+            # Rank 오름차순 정렬 (Rank 1이 최고 순위)
+            filtered["Rank"] = pd.to_numeric(filtered["Rank"], errors="coerce")
+            filtered = filtered.dropna(subset=["Rank"])
+            filtered = filtered.sort_values("Rank").reset_index(drop=True)
 
-            # Top N slider
-            top_n = st.slider("Top N Results", min_value=1, max_value=20, value=5)
+            # Top N 선택 슬라이더
+            top_n = st.slider("Top N Results", 1, min(20, len(filtered)), 5)
 
-            # 시각적으로 보기 좋게 Display
-            st.write(f"### ✅ Top {top_n} Dramas in {selected_genre}")
-            display_cols = [c for c in df.columns if c not in ["_rating_clean"]]
-            st.dataframe(filtered[["Rank", col_name, "_rating_clean"] + display_cols[1:]].head(top_n))
+            st.write(f"### ✅ Top {top_n} Dramas in *{selected_genre}*")
+            show_cols = ["Rank", "Name", "Year", "Genre"]
+            available_cols = [c for c in show_cols if c in filtered.columns]
 
-            # 카드 방식 추천 (상위 3)
+            st.dataframe(filtered[available_cols].head(top_n))
+
+            # 추천 카드 상위 3개
             st.markdown("### 🎯 Recommended Picks")
             top_card = filtered.head(min(3, top_n))
+
             for _, row in top_card.iterrows():
                 st.markdown(
                     f"""
-                    **#{row['Rank']} — {row[col_name]}**
-                    ⭐ `{row['_rating_clean']}`
-                    📅 `{row.get('Year', 'Unknown')}`
+                    **#{int(row['Rank'])} — {row['Name']}**  
+                    📅 Year: `{row.get('Year', 'Unknown')}`  
+                    🎭 Genre: `{row['Genre']}`
                     """
                 )
-
         else:
-            st.warning("⚠️ No valid rating data for this genre.")
-else:
-    st.error("❌ Genre or cleaned rating column is missing.")
+            st.warning("⚠️ No data for selected genre.")
+

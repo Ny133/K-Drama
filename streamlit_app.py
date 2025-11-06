@@ -65,12 +65,6 @@ st.subheader("📋 Filtered Data")
 st.dataframe(df)
 
 
-# ✅ Rating Distribution
-if col_rating:
-    st.subheader("⭐ Rating Distribution")
-    fig_rating = px.histogram(df, x=col_rating)
-    st.plotly_chart(fig_rating, use_container_width=True)
-
 
 # ✅ Genre Bar Chart
 if col_genre:
@@ -84,12 +78,4 @@ if col_genre:
     genre_counts.columns = ["Genre", "Count"]
     fig_genre = px.bar(genre_counts, x="Genre", y="Count")
     st.plotly_chart(fig_genre, use_container_width=True)
-
-
-# ✅ Rating vs Episodes
-if col_rating and col_episodes:
-    st.subheader("📈 Rating vs Episodes")
-    fig_scatter = px.scatter(df, x=col_episodes, y=col_rating,
-                             hover_data=[df.columns[0]])
-    st.plotly_chart(fig_scatter, use_container_width=True)
 

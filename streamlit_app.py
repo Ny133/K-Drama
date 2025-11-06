@@ -77,36 +77,3 @@ if col_genre:
     st.plotly_chart(fig_genre, use_container_width=True)
 
 
-import streamlit as st
-import pandas as pd
-
-# ✅ 데이터 로드
-df = pd.read_csv("your_movies.csv")
-
-# ✅ 연도(Release Year) 필터 UI
-years = sorted(df["Release Year"].dropna().unique())
-selected_year = st.selectbox("연도 선택", years)
-
-# ✅ 선택한 연도의 영화 목록 필터링
-filtered_df = df[df["Release Year"] == selected_year]
-
-# ✅ 데이터 없는 경우 예외 처리
-if filtered_df.empty:
-    st.warning("😥 해당 연도에 영화 데이터가 없습니다.")
-else:
-    st.subheader(f"📌 {selected_year}년 영화 추천 목록")
-    
-    # ✅ Top 10 작품 기준 (평가 컬럼이 없다면 Popularity 기준 등으로)
-    if "Popularity" in df.columns:
-        filtered_df = filtered_df.sort_values("Popularity", ascending=False).head(10)
-    else:
-        # Popularity도 없으면 그냥 정렬 없이 상위 10개만
-        filtered_df = filtered_df.head(10)
-    
-    # ✅ 리스트 출력
-    for idx, row in filtered_df.iterrows():
-        st.write(f"🎬 **{row['Title']}** ({row['Release Year']})")
-
-    # ✅ 테이블 표시 (선택)
-    st.dataframe(filtered_df)
-

@@ -76,6 +76,15 @@ if col_genre:
     fig_genre = px.bar(genre_counts, x="Genre", y="Count")
     st.plotly_chart(fig_genre, use_container_width=True)
 
+rating_clean = (
+    df[col_rating]
+    .astype(str)
+    .str.extract(r'([0-9]+[.,]?[0-9]*)')[0]
+    .str.replace(',', '.', regex=False)
+)
+
+df["_rating_clean"] = pd.to_numeric(rating_clean, errors="coerce")
+
 # ====== Rating by Drama Title ======
 st.subheader("📊 Rating by Drama Title")
 

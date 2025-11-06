@@ -16,7 +16,7 @@ def load_data():
 
 df = load_data()
 
-st.title("📺 K-Drama Dashboard")
+st.title("📺 K-Drama Dashboard_GENRE")
 
 
 
@@ -75,53 +75,5 @@ if col_genre:
     genre_counts.columns = ["Genre", "Count"]
     fig_genre = px.bar(genre_counts, x="Genre", y="Count")
     st.plotly_chart(fig_genre, use_container_width=True)
-# ====== 🎭 Genre-based Top Picks ======
-st.subheader("🎭 Genre-based Top Rated Dramas")
 
-# Genre 분리 및 정제
-if "Genre" in df.columns and "_rating_clean" in df.columns:
-    genre_list = (
-        df["Genre"]
-        .dropna()
-        .astype(str)
-        .str.split(",")
-        .explode()
-        .str.strip()
-        .unique()
-    )
-    genre_list = sorted(genre_list)
-
-    selected_genre = st.selectbox("📌 Select a Genre", genre_list)
-
-    if selected_genre:
-        filtered_genre = df[
-            df["Genre"]
-            .astype(str)
-            .str.contains(selected_genre, case=False, na=False)
-        ].dropna(subset=["_rating_clean"])
-
-        if not filtered_genre.empty:
-            top_drama = filtered_genre.sort_values("_rating_clean", ascending=False).iloc[0]
-            
-            st.success(f"🎖️ Top Recommendation in **{selected_genre}**")
-
-            col_name = df.columns[0]  # 작품명 컬럼
-            top_name = top_drama[col_name]
-            top_rating = top_drama["_rating_clean"]
-            top_year = top_drama["Year"] if "Year" in filtered_genre.columns else "Unknown"
-
-            st.markdown(f"""
-                **{top_name}**  
-                ⭐ Rating: `{top_rating}`  
-                📅 Year: `{top_year}`
-            """)
-
-            # 상세 데이터 표시 버튼
-            with st.expander("📘 More Details"):
-                cols_to_show = [col for col in df.columns if col not in ["_rating_clean"]]
-                st.write(top_drama[cols_to_show])
-        else:
-            st.warning("⚠️ No valid rating data for this genre.")
-else:
-    st.error("❌ Genre or rating data missing.")
 

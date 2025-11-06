@@ -76,3 +76,40 @@ if col_genre:
     fig_genre = px.bar(genre_counts, x="Genre", y="Count")
     st.plotly_chart(fig_genre, use_container_width=True)
 
+# ====== Rating by Drama Title ======
+st.subheader("📊 Rating by Drama Title")
+
+if col_rating and df["_rating_clean"].notna().sum() > 0:
+    # 유효한 rating 있는 데이터만 사용
+    df_valid = df.dropna(subset=["_rating_clean"])
+
+    # 평점 높은 순 정렬
+    df_sorted = df_valid.sort_values("_rating_clean", ascending=False)
+
+    # 작품명 컬럼 찾기 (보통 첫 컬럼이 Name)
+    col_name = df.columns[0]
+
+    fig_bar = px.bar(
+        df_sorted,
+        x="_rating_clean",
+        y=col_name,
+        orientation="h",
+        title="Drama Ratings",
+        labels={"_rating_clean": "Rating", col_name: "Drama"},
+        hover_data=[col_name, col_rating],
+    )
+
+    fig_bar.update_layout(
+        yaxis={'categoryorder':'total ascending'},  # 높은 평점이 위로 오도록
+        height=800
+    )
+
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+    # ✅ 작품 검색 기능 추가(Optional)
+    search_title = st.text_input("🔍 Search Drama Title")
+    if search_title:
+        result = df[df[col_name].str.contains(search_title, case=False, na=False)]
+        st.write(result[[col_name, col_rating, "_rating_clean"]])
+else:
+    st.warning("⚠ 유효한 Rating 데이터가 부족합니다.")
